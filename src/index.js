@@ -53,7 +53,11 @@ import './index.css';
       super(props);
       this.state = {
         history: [{ 
-          squares: Array(9).fill(null)
+          squares: Array(9).fill(null),
+          locate: {
+            x: null,
+            y: null,
+          },
         }],
         xIsNext: true,
         stepNumber: 0,
@@ -62,16 +66,31 @@ import './index.css';
 
     handleClick(i) {
       const { history, stepNumber } = this.state
+      // 当跳回之前的步骤后，下一步刷新状态数组
       const updateHistory = history.slice(0, stepNumber + 1)
       const currentSquares = updateHistory[updateHistory.length - 1].squares
       const squares = currentSquares.slice()
       if (calculateWinner(squares) || squares[i]) {
         return
       }
+      // 点击之后改变显示
       squares[i] = this.state.xIsNext ? 'X' : 'O'
+      // 记录坐标
+      let locate = {}
+      if (i < 3) {
+        locate.x = 1
+        locate.y = i + 1
+      } else if (i < 6) {
+        locate.x = 2
+        locate.y = (i === 3) ? 1 : (i === 4) ? 2 : 3
+      } else {
+        locate.x = 3
+        locate.y = (i === 6) ? 1 : (i === 7) ? 2 : 3
+      }
       this.setState({ 
         history: updateHistory.concat([{
           squares,
+          locate,
         }]),
         xIsNext: !this.state.xIsNext,
         stepNumber: updateHistory.length,
@@ -86,10 +105,11 @@ import './index.css';
     }
 
     render() {
-      const squares = this.state.history[this.state.stepNumber].squares
+      const { squares } = this.state.history[this.state.stepNumber]
       const winner = calculateWinner(squares)
       const moves = this.state.history.map((step, move) => {
-        const desc = move ? 'Go to move #' + move : 'Go to game start'
+        const desc = move ? 'Go to move #' + move + ',locate:' + step.locate.x + ',' + step.locate.y
+          : 'Go to game start'
         return (
           <li key={move}>
             <button onClick={() => this.jumpTo(move)}>{desc}</button>
