@@ -52,14 +52,19 @@ import './index.css';
     constructor(props) {
       super(props);
       this.state = {
+        // 记录历史记录
         history: [{ 
+          // 井字棋的状态
           squares: Array(9).fill(null),
+          // 坐标
           locate: {
             x: null,
             y: null,
           },
         }],
+        // 下一个角色
         xIsNext: true,
+        // 记录步数
         stepNumber: 0,
       }
     }
@@ -110,6 +115,13 @@ import './index.css';
       const moves = this.state.history.map((step, move) => {
         const desc = move ? 'Go to move #' + move + ',locate:' + step.locate.x + ',' + step.locate.y
           : 'Go to game start'
+        if (move === this.state.stepNumber) {
+          return (
+            <li key={move}>
+              <button onClick={() => this.jumpTo(move)}><b>{desc}</b></button>
+            </li>
+          )
+        }
         return (
           <li key={move}>
             <button onClick={() => this.jumpTo(move)}>{desc}</button>
