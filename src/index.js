@@ -23,27 +23,23 @@ import './index.css';
         />
       );
     }
+
+    createBoard = () => {
+      let list = []
+      for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 3; j++) {
+            list.push(this.renderSquare(j + 3*i))  
+        }
+        list.push(<br />)
+      }
+      return list
+    }
   
     render() {
-      const element = (
-        <div className="board-row">
-        {this.renderSquare(0)}
-        {this.renderSquare(1)}
-        {this.renderSquare(2)}
-      </div>
-      )
-      let list = []
-      for (var i = 0; i < 3; i++) {
-        list.push((<div className="board-row">
-          {element}
-        </div>))
-        
-      }
+
       return (
         <div>
-          {list.map((square) => {
-            return square
-          })}
+         {this.createBoard().map(item => item)}
         </div>
       );
     }
