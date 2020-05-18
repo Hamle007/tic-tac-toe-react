@@ -18,6 +18,7 @@ import './index.css';
     renderSquare(i) {
       return (
         <Square
+          key={i}
           value={this.props.squares[i]}
           onClick={() => this.props.onClick(i)}
         />
@@ -30,7 +31,7 @@ import './index.css';
         for (let j = 0; j < 3; j++) {
             list.push(this.renderSquare(j + 3*i))  
         }
-        list.push(<br />)
+        list.push(<br key={i + 9} />)
       }
       return list
     }
@@ -44,6 +45,16 @@ import './index.css';
       );
     }
   }
+
+  function Head(props) {
+    const { status, order, onClick } = props
+    return (
+      <div>
+        <label>{status}</label>
+        <button className="historyBtu" onClick={onClick}>{order ? '逆序' : '顺序' }</button>
+      </div>
+    )
+  }
   
   class Game extends React.Component {
     constructor(props) {
@@ -54,18 +65,23 @@ import './index.css';
           // 井字棋的状态
           squares: Array(9).fill(null),
           // 坐标
-          locate: {
-            x: null,
-            y: null,
-          },
+          locate: null,
+          // 记录的文本
+          text: 'Start Game',
         }],
         // 下一个角色
         xIsNext: true,
         // 记录步数
         stepNumber: 0,
+        // 历史记录的顺序，true为逆序，false为顺序
+        order: true,
       }
     }
 
+    /**
+     * 点击棋盘位置更改显示
+     * @param {棋盘的索引} i 
+     */
     handleClick(i) {
       const { history, stepNumber } = this.state
       // 当跳回之前的步骤后，下一步刷新状态数组
@@ -77,7 +93,22 @@ import './index.css';
       }
       // 点击之后改变显示
       squares[i] = this.state.xIsNext ? 'X' : 'O'
-      // 记录坐标
+      this.setState({ 
+        history: updateHistory.concat([{
+          squares,
+          locate: this.getLocate(i),
+          text: 'Go to move #' + (updateHistory.length - 1),
+        }]),
+        xIsNext: !this.state.xIsNext,
+        stepNumber: updateHistory.length,
+      })
+    }
+
+    /**
+     * 获取每一步的坐标
+     * @param {棋盘位置} i 
+     */
+    getLocate(i) {
       let locate = {}
       if (i < 3) {
         locate.x = 1
@@ -89,16 +120,13 @@ import './index.css';
         locate.x = 3
         locate.y = (i === 6) ? 1 : (i === 7) ? 2 : 3
       }
-      this.setState({ 
-        history: updateHistory.concat([{
-          squares,
-          locate,
-        }]),
-        xIsNext: !this.state.xIsNext,
-        stepNumber: updateHistory.length,
-      })
+      return locate
     }
 
+    /**
+     * 跳到指定的历史记录
+     * @param {步数} step 
+     */
     jumpTo(step) {
       this.setState({
         stepNumber: step,
@@ -106,25 +134,38 @@ import './index.css';
       })
     }
 
+    /**
+     * 逆序显示历史记录
+     */
+    handleHistoryChange() {
+      const { order, history } = this.state
+      let nerHistory = history
+      this.setState({
+        order: !order,
+        history: nerHistory.reverse(),
+      })
+    }
+
     render() {
       const { squares } = this.state.history[this.state.stepNumber]
       const winner = calculateWinner(squares)
       const moves = this.state.history.map((step, move) => {
-        const desc = move ? 'Go to move #' + move + ',locate:' + step.locate.x + ',' + step.locate.y
-          : 'Go to game start'
-        if (move === this.state.stepNumber) {
-          return (
-            <li key={move}>
-              <button onClick={() => this.jumpTo(move)}><b>{desc}</b></button>
-            </li>
-          )
-        }
+      const desc = step.text + (step.locate != null ? (',locate:' + step.locate.x + ',' + step.locate.y) : '')
+      if (move === this.state.stepNumber) {
+        // 当前步骤加粗显示
+        return (
+          <li key={move}>
+            <button onClick={() => this.jumpTo(move)}><b>{desc}</b></button>
+          </li>
+        )
+      }
         return (
           <li key={move}>
             <button onClick={() => this.jumpTo(move)}>{desc}</button>
           </li>
         )
       })
+
       let status
       if (winner) {
         status = 'Winner: ' + winner
@@ -141,7 +182,7 @@ import './index.css';
             />
           </div>
           <div className="game-info">
-            <div>{status}</div>
+            <Head status={status} order={this.state.order} onClick={() => this.handleHistoryChange()} />
             <ol>{moves}</ol>
           </div>
         </div>
