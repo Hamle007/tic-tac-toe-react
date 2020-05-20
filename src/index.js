@@ -83,24 +83,25 @@ import './index.css';
      * @param {棋盘的索引} i 
      */
     handleClick(i) {
-      const { history, stepNumber } = this.state
+      const { history, order } = this.state
       // 当跳回之前的步骤后，下一步刷新状态数组
-      const updateHistory = history.slice(0, stepNumber + 1)
-      const currentSquares = updateHistory[updateHistory.length - 1].squares
+      const updateHistory = history
+      const currentSquares = order ? updateHistory[updateHistory.length - 1].squares : updateHistory[0].squares
       const squares = currentSquares.slice()
       if (calculateWinner(squares) || squares[i]) {
         return
       }
       // 点击之后改变显示
       squares[i] = this.state.xIsNext ? 'X' : 'O'
+      const newHistory = {
+        squares,
+        locate: this.getLocate(i),
+        text: 'Go to move #' + updateHistory.length,
+      }
       this.setState({ 
-        history: updateHistory.concat([{
-          squares,
-          locate: this.getLocate(i),
-          text: 'Go to move #' + (updateHistory.length - 1),
-        }]),
+        history: order ? updateHistory.concat([newHistory]) : [newHistory].concat(updateHistory),
         xIsNext: !this.state.xIsNext,
-        stepNumber: updateHistory.length,
+        stepNumber: order ? updateHistory.length : 0,
       })
     }
 
@@ -128,22 +129,84 @@ import './index.css';
      * @param {步数} step 
      */
     jumpTo(step) {
-      this.setState({
-        stepNumber: step,
-        xIsNext: step % 2 === 0,
-      })
+      const { order, history } = this.state
+      if ((order && step === 0) || (!order && step === (history.length - 1))) {
+        this.setState({
+          history: [{ 
+            squares: Array(9).fill(null),
+            locate: null,
+            text: 'Start Game',
+          }],
+          xIsNext: true,
+          stepNumber: 0,
+          order: true,
+        })
+      } else {
+        this.setState({
+          stepNumber: step,
+          xIsNext: step % 2 === 0,
+        })
+      }
     }
 
     /**
      * 逆序显示历史记录
      */
     handleHistoryChange() {
-      const { order, history } = this.state
-      let nerHistory = history
-      this.setState({
-        order: !order,
-        history: nerHistory.reverse(),
-      })
+      const { order, history, stepNumber } = this.state
+      // 当步数不为0
+      if (history.length > 1) {
+        let nerHistory = history
+        this.setState({
+          order: !order,
+          history: nerHistory.reverse(),
+          // 逆序之后 原来选中的步数应该始终被选中
+          stepNumber: this.getNewStepNumber(history, stepNumber)
+        })
+      } else {
+        alert("请先走一步!")
+      }
+      
+    }
+
+    /**
+     * 数组逆序后返回被选中的索引
+     * @param {数组} array 
+     * @param {被选中的索引} i 
+     */
+    getNewStepNumber(array, i) {
+      let length = array.length
+      if (length === 0) {
+        return null
+      }
+      if (length === 1) {
+        return 0
+      }
+      // 取整数部分
+      const middleIndex = parseInt(length / 2)
+      let stepNumber = 0
+      if (length % 2 === 0) {
+        // 偶数  
+        if (i === middleIndex) {
+          stepNumber = middleIndex - 1
+        } else if (i === (middleIndex - 1)) {
+          stepNumber = middleIndex
+        } else if (i < (middleIndex - 1)) {
+          stepNumber = middleIndex + (middleIndex - 1 - i)
+        } else {
+          stepNumber = middleIndex - 1 - (i - middleIndex)
+        }
+      } else {
+        // 奇数
+        if (i === middleIndex) {
+          stepNumber = i
+        } else if (i < middleIndex) {
+          stepNumber = middleIndex + (middleIndex - i)
+        } else {
+          stepNumber = middleIndex - (i - middleIndex)
+        }
+      }
+      return stepNumber
     }
 
     render() {
